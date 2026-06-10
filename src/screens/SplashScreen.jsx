@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import amadoImg from '../assets/amado.png'
 
 const styles = {
   container: {
@@ -8,7 +9,13 @@ const styles = {
     alignItems: 'center', justifyContent: 'center',
     zIndex: 9999,
   },
-  icon: { fontSize: 72, marginBottom: 20, animation: 'pulse 1.2s ease-in-out infinite' },
+  img: {
+    width: 140, height: 140, borderRadius: '50%',
+    objectFit: 'cover',
+    marginBottom: 20,
+    boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+    animation: 'pulse 1.2s ease-in-out infinite',
+  },
   title: { color: '#fff', fontSize: 28, fontWeight: 800, letterSpacing: 1, marginBottom: 6 },
   sub:   { color: 'rgba(255,255,255,0.75)', fontSize: 14, letterSpacing: 2, marginBottom: 50 },
   dots:  { display: 'flex', gap: 8 },
@@ -23,8 +30,8 @@ export default function SplashScreen() {
 
   return (
     <div style={styles.container}>
-      <style>{`@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}`}</style>
-      <div style={styles.icon}>💙</div>
+      <style>{`@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}`}</style>
+      <img src={amadoImg} alt="アマド" style={styles.img} />
       <h1 style={styles.title}>My Health Diary</h1>
       <p style={styles.sub}>マイ ヘルス ダイアリー</p>
       <div style={styles.dots}>
