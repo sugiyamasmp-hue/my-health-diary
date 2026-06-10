@@ -270,7 +270,7 @@ textarea.form-control {
   background: var(--card);
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 45vh;
+  max-height: 35vh;
   overflow-y: auto;
   animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
   -webkit-overflow-scrolling: touch;
