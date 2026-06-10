@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Single-user app: allow all reads/writes for now
+    // TODO: Add authentication rules when auth is implemented
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
