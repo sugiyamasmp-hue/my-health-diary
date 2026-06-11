@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { addBloodPressure } from '../../hooks/useHealthData'
 
+const LOCATIONS = ['自宅', '病院', 'DS', 'その他']
+
 export default function BloodPressureForm({ dateStr, onSave, onClose }) {
   const [form, setForm]     = useState({ systolic: '', diastolic: '', pulse: '', location: '', memo: '' })
   const [saving, setSaving] = useState(false)
@@ -35,6 +37,7 @@ export default function BloodPressureForm({ dateStr, onSave, onClose }) {
           <h2>💉 血圧を記録</h2>
           <button className="sheet-close" onClick={onClose}>✕</button>
         </div>
+
         <div className="modal-body">
           {error && <div style={errStyle}>{error}</div>}
 
@@ -59,24 +62,37 @@ export default function BloodPressureForm({ dateStr, onSave, onClose }) {
             </div>
           </div>
 
-          <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', margin: '-8px 0 12px' }}>
+          <div style={{ textAlign: 'center', margin: '-4px 0 18px' }}>
             {form.systolic && form.diastolic
-              ? <strong style={{ fontSize: 22, color: 'var(--bp-color)' }}>{form.systolic}/{form.diastolic}</strong>
-              : '---/---'} mmHg
-            {form.pulse && <span style={{ marginLeft: 12, color: 'var(--text-secondary)' }}>{form.pulse} bpm</span>}
+              ? <strong style={{ fontSize: 26, color: 'var(--bp-color)' }}>{form.systolic}/{form.diastolic}</strong>
+              : <span style={{ fontSize: 26, color: 'var(--border)' }}>---/---</span>}
+            <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginLeft: 4 }}>mmHg</span>
+            {form.pulse && <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginLeft: 12 }}>{form.pulse} bpm</span>}
           </div>
 
           <div className="form-group">
             <label>場所</label>
-            <input className="form-control" type="text" placeholder="自宅・病院など"
-              value={form.location} onChange={e => set('location', e.target.value)} />
+            <div className="location-btn-group">
+              {LOCATIONS.map(loc => (
+                <button
+                  key={loc}
+                  type="button"
+                  className={`location-btn${form.location === loc ? ' active' : ''}`}
+                  onClick={() => set('location', form.location === loc ? '' : loc)}
+                >
+                  {loc}
+                </button>
+              ))}
+            </div>
           </div>
+
           <div className="form-group">
             <label>メモ</label>
             <textarea className="form-control" placeholder="気になること、体調など..."
               rows={3} value={form.memo} onChange={e => set('memo', e.target.value)} />
           </div>
         </div>
+
         <div className="modal-footer">
           <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>キャンセル</button>
           <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>
