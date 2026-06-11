@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { fetchDayData, deleteBloodPressure, deleteTemperature, deleteWeight, deleteInjection, deleteEvent } from '../hooks/useHealthData'
 import { toDisplayDate } from '../utils/dateUtils'
 import BloodPressureForm from './forms/BloodPressureForm'
@@ -68,7 +69,7 @@ export default function DayDetail({ dateStr, onClose }) {
     }
   }
 
-  return (
+  return createPortal(
     <>
       <div className="overlay" onClick={onClose}>
         <div
@@ -196,7 +197,8 @@ export default function DayDetail({ dateStr, onClose }) {
       {openForm === 'weight'    && <WeightForm        dateStr={dateStr} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
       {openForm === 'injection' && <InjectionForm     dateStr={dateStr} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
       {openForm === 'event'     && <EventForm         dateStr={dateStr} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
-    </>
+    </>,
+    document.body
   )
 }
 

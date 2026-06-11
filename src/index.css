@@ -63,7 +63,7 @@ body {
 .screen {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 64px;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
   -webkit-overflow-scrolling: touch;
 }
 
@@ -281,7 +281,13 @@ textarea.form-control {
   animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
 }
 .bottom-sheet--half { height: 50vh; }
-.bottom-sheet--full { height: 100vh; border-radius: 0; }
+.bottom-sheet--full {
+  height: 100vh;
+  border-radius: 0;
+}
+.bottom-sheet--full .sheet-content {
+  padding-bottom: env(safe-area-inset-bottom);
+}
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
@@ -375,7 +381,7 @@ textarea.form-control {
 }
 .modal-footer {
   flex-shrink: 0;
-  padding: 12px 20px 20px;
+  padding: 12px 20px max(20px, env(safe-area-inset-bottom));
   display: flex;
   gap: 10px;
   border-top: 1px solid var(--border);
