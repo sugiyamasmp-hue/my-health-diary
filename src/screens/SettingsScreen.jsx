@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   fetchSchedules, addSchedule, updateSchedulePeriod,
   endSchedule, deleteSchedule, getCurrentPeriod, getScheduledDatesInRange,
@@ -271,7 +272,7 @@ function AddScheduleModal({ onSaved, onClose }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
@@ -314,7 +315,8 @@ function AddScheduleModal({ onSaved, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
