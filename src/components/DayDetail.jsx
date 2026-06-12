@@ -1,7 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { fetchDayData, deleteBloodPressure, deleteTemperature, deleteWeight, deleteInjection, deleteEvent } from '../hooks/useHealthData'
+import {
+  fetchDayData, fetchSchedules,
+  deleteBloodPressure, deleteTemperature, deleteWeight, deleteInjection, deleteEvent,
+  getCurrentPeriod, getScheduledDatesInRange,
+} from '../hooks/useHealthData'
 import { toDisplayDate } from '../utils/dateUtils'
+
+const PERIOD_LABEL = { 7: '1週間', 14: '2週間', 21: '3週間', 28: '4週間' }
+const toPeriodLabel = (days) => PERIOD_LABEL[days] ?? `${days}日`
 import BloodPressureForm from './forms/BloodPressureForm'
 import WeightForm from './forms/WeightForm'
 import InjectionForm from './forms/InjectionForm'
@@ -17,19 +24,31 @@ const ADD_BUTTONS = [
 ]
 
 export default function DayDetail({ dateStr, onClose }) {
-  const [data, setData]         = useState(null)
-  const [loading, setLoading]   = useState(true)
-  // openForm: null | { type: 'bp'|'temp'|'weight'|'injection'|'event', record: null|existing }
-  const [openForm, setOpenForm]  = useState(null)
-  const [snap, setSnap]          = useState('partial') // 'partial' | 'half' | 'full'
+  const [data, setData]                   = useState(null)
+  const [scheduledForDate, setScheduledForDate] = useState([])
+  const [loading, setLoading]             = useState(true)
+  // openForm: null | { type, record, prefilledScheduleId? }
+  const [openForm, setOpenForm]           = useState(null)
+  const [snap, setSnap]                   = useState('partial') // 'partial' | 'half' | 'full'
 
   const touchStartY = useRef(0)
   const contentRef  = useRef(null)
 
   const load = async () => {
     setLoading(true)
-    try { setData(await fetchDayData(dateStr)) }
-    finally { setLoading(false) }
+    try {
+      const [dayData, allSchedules] = await Promise.all([
+        fetchDayData(dateStr),
+        fetchSchedules(),
+      ])
+      setData(dayData)
+      const due = allSchedules
+        .filter(s => s.active && !s.endDate && s.startDate)
+        .filter(s => getScheduledDatesInRange(s, dateStr, dateStr).length > 0)
+      setScheduledForDate(due)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [dateStr])
@@ -169,6 +188,39 @@ export default function DayDetail({ dateStr, onClose }) {
                   </div>
                 ))}
 
+                {scheduledForDate
+                  .filter(s => !data?.injections?.some(inj => inj.scheduleId === s.id))
+                  .map(s => {
+                    const period = getCurrentPeriod(s)
+                    return (
+                      <div key={s.id} className="card" style={{
+                        borderLeft: '4px solid var(--injection-color)',
+                        background: '#FAF5FF',
+                      }}>
+                        <div className="card-header">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span className="card-title" style={{ color: 'var(--injection-color)' }}>💊 注射予定</span>
+                            <span style={{
+                              fontSize: 11, background: '#E8D5F5', color: 'var(--injection-color)',
+                              borderRadius: 4, padding: '2px 6px', fontWeight: 600,
+                            }}>予定</span>
+                          </div>
+                          <button
+                            onClick={() => setOpenForm({ type: 'injection', record: null, prefilledScheduleId: s.id })}
+                            style={{ ...editBtn, fontSize: 13, fontWeight: 700, color: 'var(--injection-color)' }}
+                          >
+                            記録する →
+                          </button>
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>{s.drugName}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                          周期: {toPeriodLabel(period)}おき
+                        </div>
+                      </div>
+                    )
+                  })
+                }
+
                 {data?.events?.map(r => (
                   <div key={r.id} className="card" style={{ borderLeft: '4px solid var(--event-color)' }}>
                     <div className="card-header">
@@ -196,7 +248,8 @@ export default function DayDetail({ dateStr, onClose }) {
                 ))}
 
                 {!data?.bloodPressures?.length && !data?.temperatures?.length &&
-                 !data?.weights?.length && !data?.injections?.length && !data?.events?.length && (
+                 !data?.weights?.length && !data?.injections?.length && !data?.events?.length &&
+                 !scheduledForDate.length && (
                   <div className="empty-state">
                     <div className="empty-icon">📝</div>
                     <p>記録がありません<br />上にスワイプして追加できます</p>
@@ -210,7 +263,7 @@ export default function DayDetail({ dateStr, onClose }) {
 
       {openForm?.type === 'bp'        && <BloodPressureForm dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
       {openForm?.type === 'weight'    && <WeightForm        dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
-      {openForm?.type === 'injection' && <InjectionForm     dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
+      {openForm?.type === 'injection' && <InjectionForm     dateStr={dateStr} initialData={openForm.record} prefilledScheduleId={openForm.prefilledScheduleId} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
       {openForm?.type === 'event'     && <EventForm         dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
     </>,
     document.body

@@ -26,9 +26,9 @@ function buildDates(startDate, period, count) {
   return dates
 }
 
-export default function InjectionForm({ dateStr, initialData, onSave, onClose }) {
+export default function InjectionForm({ dateStr, initialData, prefilledScheduleId, onSave, onClose }) {
   const [schedules, setSchedules]         = useState([])
-  const [scheduleId, setScheduleId]       = useState(initialData?.scheduleId || '')
+  const [scheduleId, setScheduleId]       = useState(initialData?.scheduleId || prefilledScheduleId || '')
   const [drugName, setDrugName]           = useState(initialData?.drugName || '')
   const [scheduledDate, setScheduledDate] = useState(initialData?.scheduledDate || dateStr)
   const [actualDate, setActualDate]       = useState(initialData?.actualDate || dateStr)
@@ -40,10 +40,18 @@ export default function InjectionForm({ dateStr, initialData, onSave, onClose })
 
   useEffect(() => {
     fetchSchedules().then(list => {
-      setSchedules(list.filter(s => s.active))
-      if (!initialData && list.length > 0) {
-        setScheduleId(list[0].id)
-        setDrugName(list[0].drugName)
+      const active = list.filter(s => s.active)
+      setSchedules(active)
+      if (!initialData) {
+        const targetId = prefilledScheduleId || (active.length > 0 ? active[0].id : '')
+        const target = active.find(s => s.id === targetId)
+        if (target) {
+          setScheduleId(target.id)
+          setDrugName(target.drugName)
+        } else if (active.length > 0) {
+          setScheduleId(active[0].id)
+          setDrugName(active[0].drugName)
+        }
       }
     })
   }, [])
