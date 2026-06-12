@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { fetchDayData, deleteBloodPressure, deleteTemperature, deleteWeight, deleteInjection, deleteEvent } from '../hooks/useHealthData'
 import { toDisplayDate } from '../utils/dateUtils'
 import BloodPressureForm from './forms/BloodPressureForm'
-import TemperatureForm from './forms/TemperatureForm'
 import WeightForm from './forms/WeightForm'
 import InjectionForm from './forms/InjectionForm'
 import EventForm from './forms/EventForm'
@@ -12,7 +11,6 @@ const CATEGORY_LABEL = { medical: '診療', rehab: 'リハ', other: 'その他' 
 
 const ADD_BUTTONS = [
   { key: 'bp',        label: '💉 血圧',    color: '#2196F3' },
-  { key: 'temp',      label: '🌡️ 体温',   color: '#FF5722' },
   { key: 'weight',    label: '⚖️ 体重',   color: '#4CAF50' },
   { key: 'injection', label: '💊 注射',   color: '#9C27B0' },
   { key: 'event',     label: '📋 イベント', color: '#FF9800' },
@@ -119,6 +117,9 @@ export default function DayDetail({ dateStr, onClose }) {
                       {r.pulse && <><span className="card-value" style={{ fontSize: 18, marginLeft: 8 }}>{r.pulse}</span><span className="card-unit">bpm</span></>}
                     </div>
                     {r.location && <div style={metaText}>📍 {r.location}</div>}
+                    {r.temperature != null && (
+                      <div style={metaText}>🌡️ <span style={{ color: r.temperature >= 38 ? '#EF4444' : r.temperature >= 37 ? '#F59E0B' : 'var(--temp-color)', fontWeight: 600 }}>{r.temperature}°C</span></div>
+                    )}
                     {r.memo && <div style={memoText}>{r.memo}</div>}
                   </div>
                 ))}
@@ -128,7 +129,6 @@ export default function DayDetail({ dateStr, onClose }) {
                     <div className="card-header">
                       <span className="card-title" style={{ color: 'var(--temp-color)' }}>🌡️ 体温</span>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button onClick={() => setOpenForm({ type: 'temp', record: r })} style={editBtn}>✏️</button>
                         <button onClick={() => del('temp', r.id)} style={delBtn}>🗑</button>
                       </div>
                     </div>
@@ -209,7 +209,6 @@ export default function DayDetail({ dateStr, onClose }) {
       </div>
 
       {openForm?.type === 'bp'        && <BloodPressureForm dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
-      {openForm?.type === 'temp'      && <TemperatureForm   dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
       {openForm?.type === 'weight'    && <WeightForm        dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
       {openForm?.type === 'injection' && <InjectionForm     dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
       {openForm?.type === 'event'     && <EventForm         dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}

@@ -50,13 +50,14 @@ export default function GraphScreen() {
         const lastBP = bps[bps.length - 1]
         const lastTemp = (d.temperatures || []).slice(-1)[0]
         const lastWeight = (d.weights || []).slice(-1)[0]
+        const tempValue = lastTemp?.value ?? lastBP?.temperature ?? null
         points.push({
           date,
           label: date.slice(5),
           systolic:  lastBP.systolic,
           diastolic: lastBP.diastolic,
           pulse:     lastBP.pulse,
-          temp:      lastTemp?.value,
+          temp:      tempValue,
           weight:    lastWeight?.value,
         })
       })
