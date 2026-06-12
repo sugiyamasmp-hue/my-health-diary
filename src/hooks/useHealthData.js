@@ -4,7 +4,7 @@ import {
   query, where, getDocs, addDoc, serverTimestamp, deleteDoc
 } from 'firebase/firestore'
 import { db } from '../firebase/config'
-import { today } from '../utils/dateUtils'
+import { today, addDays, diffDays } from '../utils/dateUtils'
 
 const nanoid = () => Math.random().toString(36).slice(2, 10)
 
@@ -156,14 +156,21 @@ export const fetchSchedules = async () => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export const addSchedule = async (drugName, period) => {
+export const addSchedule = async (drugName, period, startDate) => {
+  const start = startDate || today()
   const ref = await addDoc(collection(db, 'injectionSchedules'), {
     drugName,
+    startDate: start,
+    endDate: null,
     active: true,
-    periodHistory: [{ period, startDate: today() }],
+    periodHistory: [{ period, startDate: start }],
     createdAt: serverTimestamp(),
   })
   return ref.id
+}
+
+export const endSchedule = async (id, endDate) => {
+  await updateDoc(doc(db, 'injectionSchedules', id), { endDate, active: false })
 }
 
 export const updateSchedulePeriod = async (id, newPeriod, startDate) => {
@@ -181,6 +188,38 @@ export const toggleScheduleActive = async (id, active) => {
 
 export const deleteSchedule = async (id) => {
   await deleteDoc(doc(db, 'injectionSchedules', id))
+}
+
+export const getScheduledDatesInRange = (schedule, rangeStart, rangeEnd) => {
+  const { startDate, endDate, periodHistory } = schedule
+  if (!startDate || startDate > rangeEnd) return []
+  const effectiveEnd = endDate && endDate < rangeEnd ? endDate : rangeEnd
+  if (effectiveEnd < rangeStart) return []
+
+  let cur = startDate
+
+  // Fast-forward to near rangeStart when startDate is far in the past
+  if (cur < rangeStart) {
+    const basePeriod = periodHistory?.[0]?.period ?? 7
+    const gap = diffDays(rangeStart, cur)
+    const skip = Math.max(0, Math.floor(gap / basePeriod) - 2)
+    for (let i = 0; i < skip; i++) {
+      const p = getCurrentPeriod({ periodHistory }, cur)
+      if (p <= 0) break
+      cur = addDays(cur, p)
+    }
+  }
+
+  const result = []
+  let safety = 0
+  while (cur <= effectiveEnd && safety < 200) {
+    safety++
+    if (cur >= rangeStart) result.push(cur)
+    const p = getCurrentPeriod({ periodHistory }, cur)
+    if (p <= 0) break
+    cur = addDays(cur, p)
+  }
+  return result
 }
 
 export const getCurrentPeriod = (schedule, asOf = today()) => {

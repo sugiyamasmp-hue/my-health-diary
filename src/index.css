@@ -251,8 +251,9 @@ textarea.form-control {
 .dot-bp         { background: var(--bp-color); }
 .dot-temp       { background: var(--temp-color); }
 .dot-weight     { background: var(--weight-color); }
-.dot-injection  { background: var(--injection-color); }
-.dot-event      { background: var(--event-color); }
+.dot-injection       { background: var(--injection-color); }
+.dot-injection-plan  { background: transparent; border: 1.5px solid var(--injection-color); }
+.dot-event           { background: var(--event-color); }
 
 /* ─── Modal / Bottom Sheet ─── */
 .overlay {

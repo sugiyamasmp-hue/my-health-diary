@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchRangeData } from '../hooks/useHealthData'
+import { fetchRangeData, fetchSchedules, getScheduledDatesInRange } from '../hooks/useHealthData'
 import {
   toDisplayMonth, getDaysInMonth, getFirstDayOfMonth,
   monthRange, today, toDateStr, DOW_LABELS
@@ -11,18 +11,31 @@ const now = new Date()
 export default function CalendarScreen() {
   const [year, setYear]     = useState(now.getFullYear())
   const [month, setMonth]   = useState(now.getMonth())
-  const [monthData, setMonthData] = useState({})
-  const [loading, setLoading]     = useState(false)
-  const [selected, setSelected]   = useState(null)
+  const [monthData, setMonthData]           = useState({})
+  const [scheduledInjDates, setScheduledInjDates] = useState(new Set())
+  const [loading, setLoading]               = useState(false)
+  const [selected, setSelected]             = useState(null)
 
   const loadMonth = useCallback(async (y, m) => {
     setLoading(true)
     try {
       const { start, end } = monthRange(y, m)
-      const rows = await fetchRangeData(start, end)
+      const [rows, schedules] = await Promise.all([
+        fetchRangeData(start, end),
+        fetchSchedules(),
+      ])
+
       const map = {}
       rows.forEach(({ date, data }) => { map[date] = data })
       setMonthData(map)
+
+      const planned = new Set()
+      schedules
+        .filter(s => s.active && s.startDate)
+        .forEach(s => {
+          getScheduledDatesInRange(s, start, end).forEach(d => planned.add(d))
+        })
+      setScheduledInjDates(planned)
     } finally {
       setLoading(false)
     }
@@ -40,7 +53,7 @@ export default function CalendarScreen() {
   }
 
   const todayStr = today()
-  const daysInMonth  = getDaysInMonth(year, month)
+  const daysInMonth    = getDaysInMonth(year, month)
   const firstDayOfWeek = getFirstDayOfMonth(year, month)
 
   const cells = []
@@ -49,13 +62,16 @@ export default function CalendarScreen() {
 
   const getIndicators = (dateStr) => {
     const d = monthData[dateStr]
-    if (!d) return []
     const dots = []
-    if (d.bloodPressures?.length) dots.push('bp')
-    if (d.temperatures?.length)   dots.push('temp')
-    if (d.weights?.length)        dots.push('weight')
-    if (d.injections?.length)     dots.push('injection')
-    if (d.events?.length)         dots.push('event')
+    if (d?.bloodPressures?.length) dots.push('bp')
+    if (d?.temperatures?.length)   dots.push('temp')
+    if (d?.weights?.length)        dots.push('weight')
+    if (d?.injections?.length) {
+      dots.push('injection')
+    } else if (scheduledInjDates.has(dateStr)) {
+      dots.push('injection-plan')
+    }
+    if (d?.events?.length) dots.push('event')
     return dots
   }
 
@@ -95,7 +111,7 @@ export default function CalendarScreen() {
           {cells.map((day, idx) => {
             if (!day) return <div key={`e${idx}`} />
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-            const isToday = dateStr === todayStr
+            const isToday    = dateStr === todayStr
             const isSelected = dateStr === selected
             const dots = getIndicators(dateStr)
             const dow = (firstDayOfWeek + day - 1) % 7
@@ -128,7 +144,7 @@ export default function CalendarScreen() {
       <div style={{ padding: '8px 16px', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         {[
           ['bp', '血圧'], ['temp', '体温'], ['weight', '体重'],
-          ['injection', '注射'], ['event', 'イベント'],
+          ['injection', '注射(実績)'], ['injection-plan', '注射(予定)'], ['event', 'イベント'],
         ].map(([t, label]) => (
           <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-secondary)' }}>
             <span className={`dot dot-${t}`} />
