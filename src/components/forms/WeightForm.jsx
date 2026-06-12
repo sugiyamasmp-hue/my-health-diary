@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { addWeight } from '../../hooks/useHealthData'
+import { addWeight, updateWeight } from '../../hooks/useHealthData'
 
-export default function WeightForm({ dateStr, onSave, onClose }) {
-  const [value, setValue]   = useState('')
-  const [memo, setMemo]     = useState('')
+export default function WeightForm({ dateStr, initialData, onSave, onClose }) {
+  const [value, setValue]   = useState(initialData ? String(initialData.value) : '')
+  const [memo, setMemo]     = useState(initialData?.memo || '')
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
@@ -13,7 +13,11 @@ export default function WeightForm({ dateStr, onSave, onClose }) {
     if (v < 10 || v > 300) { setError('体重の値が範囲外です'); return }
     setSaving(true)
     try {
-      await addWeight(dateStr, { value: v, memo: memo.trim() })
+      if (initialData) {
+        await updateWeight(dateStr, initialData.id, { value: v, memo: memo.trim() })
+      } else {
+        await addWeight(dateStr, { value: v, memo: memo.trim() })
+      }
       onSave()
     } catch (e) {
       setError('保存に失敗しました: ' + e.message)
@@ -26,7 +30,7 @@ export default function WeightForm({ dateStr, onSave, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>⚖️ 体重を記録</h2>
+          <h2>⚖️ 体重を{initialData ? '編集' : '記録'}</h2>
           <button className="sheet-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">

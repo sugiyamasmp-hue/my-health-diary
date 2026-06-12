@@ -21,6 +21,7 @@ const ADD_BUTTONS = [
 export default function DayDetail({ dateStr, onClose }) {
   const [data, setData]         = useState(null)
   const [loading, setLoading]   = useState(true)
+  // openForm: null | { type: 'bp'|'temp'|'weight'|'injection'|'event', record: null|existing }
   const [openForm, setOpenForm]  = useState(null)
   const [snap, setSnap]          = useState('partial') // 'partial' | 'half' | 'full'
 
@@ -87,7 +88,7 @@ export default function DayDetail({ dateStr, onClose }) {
 
           <div className="sheet-add-row">
             {ADD_BUTTONS.map(({ key, label, color }) => (
-              <button key={key} onClick={() => setOpenForm(key)} style={{
+              <button key={key} onClick={() => setOpenForm({ type: key, record: null })} style={{
                 background: color + '1A', border: `1.5px solid ${color}`,
                 color, padding: '9px 14px', borderRadius: 20,
                 fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
@@ -105,7 +106,10 @@ export default function DayDetail({ dateStr, onClose }) {
                   <div key={r.id} className="card" style={{ borderLeft: '4px solid var(--bp-color)' }}>
                     <div className="card-header">
                       <span className="card-title" style={{ color: 'var(--bp-color)' }}>💉 血圧</span>
-                      <button onClick={() => del('bp', r.id)} style={delBtn}>🗑</button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={() => setOpenForm({ type: 'bp', record: r })} style={editBtn}>✏️</button>
+                        <button onClick={() => del('bp', r.id)} style={delBtn}>🗑</button>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                       <span className="card-value">{r.systolic}</span>
@@ -123,7 +127,10 @@ export default function DayDetail({ dateStr, onClose }) {
                   <div key={r.id} className="card" style={{ borderLeft: '4px solid var(--temp-color)' }}>
                     <div className="card-header">
                       <span className="card-title" style={{ color: 'var(--temp-color)' }}>🌡️ 体温</span>
-                      <button onClick={() => del('temp', r.id)} style={delBtn}>🗑</button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={() => setOpenForm({ type: 'temp', record: r })} style={editBtn}>✏️</button>
+                        <button onClick={() => del('temp', r.id)} style={delBtn}>🗑</button>
+                      </div>
                     </div>
                     <div><span className="card-value">{r.value}</span><span className="card-unit">°C</span></div>
                     {r.memo && <div style={memoText}>{r.memo}</div>}
@@ -134,7 +141,10 @@ export default function DayDetail({ dateStr, onClose }) {
                   <div key={r.id} className="card" style={{ borderLeft: '4px solid var(--weight-color)' }}>
                     <div className="card-header">
                       <span className="card-title" style={{ color: 'var(--weight-color)' }}>⚖️ 体重</span>
-                      <button onClick={() => del('weight', r.id)} style={delBtn}>🗑</button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={() => setOpenForm({ type: 'weight', record: r })} style={editBtn}>✏️</button>
+                        <button onClick={() => del('weight', r.id)} style={delBtn}>🗑</button>
+                      </div>
                     </div>
                     <div><span className="card-value">{r.value}</span><span className="card-unit">kg</span></div>
                     {r.memo && <div style={memoText}>{r.memo}</div>}
@@ -145,7 +155,10 @@ export default function DayDetail({ dateStr, onClose }) {
                   <div key={r.id} className="card" style={{ borderLeft: '4px solid var(--injection-color)' }}>
                     <div className="card-header">
                       <span className="card-title" style={{ color: 'var(--injection-color)' }}>💊 自己注射</span>
-                      <button onClick={() => del('injection', r.id)} style={delBtn}>🗑</button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={() => setOpenForm({ type: 'injection', record: r })} style={editBtn}>✏️</button>
+                        <button onClick={() => del('injection', r.id)} style={delBtn}>🗑</button>
+                      </div>
                     </div>
                     <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>{r.drugName}</div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', gap: 12 }}>
@@ -163,7 +176,10 @@ export default function DayDetail({ dateStr, onClose }) {
                         <span className="card-title" style={{ color: 'var(--event-color)' }}>📋 イベント</span>
                         <span className={`badge badge-${r.category}`}>{CATEGORY_LABEL[r.category] || r.category}</span>
                       </div>
-                      <button onClick={() => del('event', r.id)} style={delBtn}>🗑</button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={() => setOpenForm({ type: 'event', record: r })} style={editBtn}>✏️</button>
+                        <button onClick={() => del('event', r.id)} style={delBtn}>🗑</button>
+                      </div>
                     </div>
                     {r.location && <div style={metaText}>📍 {r.location}</div>}
                     {r.content && <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{r.content}</div>}
@@ -192,16 +208,20 @@ export default function DayDetail({ dateStr, onClose }) {
         </div>
       </div>
 
-      {openForm === 'bp'        && <BloodPressureForm dateStr={dateStr} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
-      {openForm === 'temp'      && <TemperatureForm   dateStr={dateStr} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
-      {openForm === 'weight'    && <WeightForm        dateStr={dateStr} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
-      {openForm === 'injection' && <InjectionForm     dateStr={dateStr} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
-      {openForm === 'event'     && <EventForm         dateStr={dateStr} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
+      {openForm?.type === 'bp'        && <BloodPressureForm dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
+      {openForm?.type === 'temp'      && <TemperatureForm   dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
+      {openForm?.type === 'weight'    && <WeightForm        dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
+      {openForm?.type === 'injection' && <InjectionForm     dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
+      {openForm?.type === 'event'     && <EventForm         dateStr={dateStr} initialData={openForm.record} onSave={handleSaved} onClose={() => setOpenForm(null)} />}
     </>,
     document.body
   )
 }
 
+const editBtn = {
+  background: 'none', border: 'none', fontSize: 16, cursor: 'pointer',
+  color: 'var(--text-secondary)', padding: '4px 6px', minHeight: 36,
+}
 const delBtn = {
   background: 'none', border: 'none', fontSize: 18, cursor: 'pointer',
   color: 'var(--text-secondary)', padding: '4px 6px', minHeight: 36,

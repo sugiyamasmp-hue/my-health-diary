@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { addEvent } from '../../hooks/useHealthData'
+import { addEvent, updateEvent } from '../../hooks/useHealthData'
 import { uploadImage } from '../../utils/cloudinary'
 
 const CATEGORIES = [
@@ -8,12 +8,13 @@ const CATEGORIES = [
   { value: 'other',   label: 'その他', color: '#EA580C' },
 ]
 
-export default function EventForm({ dateStr, onSave, onClose }) {
-  const [category, setCategory] = useState('medical')
-  const [location, setLocation] = useState('')
-  const [content, setContent]   = useState('')
-  const [memo, setMemo]         = useState('')
-  const [images, setImages]     = useState([])     // {file, previewUrl}
+export default function EventForm({ dateStr, initialData, onSave, onClose }) {
+  const [category, setCategory] = useState(initialData?.category || 'medical')
+  const [location, setLocation] = useState(initialData?.location || '')
+  const [content, setContent]   = useState(initialData?.content || '')
+  const [memo, setMemo]         = useState(initialData?.memo || '')
+  const [existingUrls]          = useState(initialData?.imageUrls || [])
+  const [images, setImages]     = useState([])     // {file, previewUrl} — new images only
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
@@ -33,24 +34,29 @@ export default function EventForm({ dateStr, onSave, onClose }) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      let imageUrls = []
+      let newUrls = []
       if (images.length > 0) {
         setUploading(true)
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
         if (cloudName && cloudName !== 'your_cloud_name') {
-          imageUrls = await Promise.all(images.map(img => uploadImage(img.file)))
+          newUrls = await Promise.all(images.map(img => uploadImage(img.file)))
         } else {
-          imageUrls = images.map(img => img.previewUrl)
+          newUrls = images.map(img => img.previewUrl)
         }
         setUploading(false)
       }
-      await addEvent(dateStr, {
+      const record = {
         category,
         location: location.trim(),
         content: content.trim(),
         memo: memo.trim(),
-        imageUrls,
-      })
+        imageUrls: [...existingUrls, ...newUrls],
+      }
+      if (initialData) {
+        await updateEvent(dateStr, initialData.id, record)
+      } else {
+        await addEvent(dateStr, record)
+      }
       onSave()
     } catch (e) {
       setError('保存に失敗しました: ' + e.message)
@@ -64,7 +70,7 @@ export default function EventForm({ dateStr, onSave, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>📋 イベントを記録</h2>
+          <h2>📋 イベントを{initialData ? '編集' : '記録'}</h2>
           <button className="sheet-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
@@ -105,6 +111,15 @@ export default function EventForm({ dateStr, onSave, onClose }) {
 
           <div className="form-group">
             <label>画像</label>
+            {existingUrls.length > 0 && (
+              <div className="image-previews" style={{ marginBottom: 8 }}>
+                {existingUrls.map((url, i) => (
+                  <div key={i} className="image-preview-item">
+                    <img src={url} alt="" />
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="image-upload-area" onClick={() => fileRef.current?.click()}>
               <div style={{ fontSize: 24, marginBottom: 6 }}>📷</div>
               <div>タップして画像を追加</div>

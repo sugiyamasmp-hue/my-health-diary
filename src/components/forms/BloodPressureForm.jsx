@@ -1,10 +1,16 @@
 import { useState } from 'react'
-import { addBloodPressure } from '../../hooks/useHealthData'
+import { addBloodPressure, updateBloodPressure } from '../../hooks/useHealthData'
 
 const LOCATIONS = ['自宅', '病院', 'DS', 'その他']
 
-export default function BloodPressureForm({ dateStr, onSave, onClose }) {
-  const [form, setForm]     = useState({ systolic: '', diastolic: '', pulse: '', location: '', memo: '' })
+export default function BloodPressureForm({ dateStr, initialData, onSave, onClose }) {
+  const [form, setForm] = useState(initialData ? {
+    systolic:  String(initialData.systolic),
+    diastolic: String(initialData.diastolic),
+    pulse:     initialData.pulse != null ? String(initialData.pulse) : '',
+    location:  initialData.location || '',
+    memo:      initialData.memo || '',
+  } : { systolic: '', diastolic: '', pulse: '', location: '', memo: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
@@ -16,12 +22,17 @@ export default function BloodPressureForm({ dateStr, onSave, onClose }) {
     if (s < 50 || s > 300 || d < 30 || d > 200) { setError('血圧の値が範囲外です'); return }
     setSaving(true)
     try {
-      await addBloodPressure(dateStr, {
+      const record = {
         systolic: s, diastolic: d,
         pulse: form.pulse ? parseInt(form.pulse) : null,
         location: form.location.trim(),
         memo: form.memo.trim(),
-      })
+      }
+      if (initialData) {
+        await updateBloodPressure(dateStr, initialData.id, record)
+      } else {
+        await addBloodPressure(dateStr, record)
+      }
       onSave()
     } catch (e) {
       setError('保存に失敗しました: ' + e.message)
@@ -34,7 +45,7 @@ export default function BloodPressureForm({ dateStr, onSave, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>💉 血圧を記録</h2>
+          <h2>💉 血圧を{initialData ? '編集' : '記録'}</h2>
           <button className="sheet-close" onClick={onClose}>✕</button>
         </div>
 

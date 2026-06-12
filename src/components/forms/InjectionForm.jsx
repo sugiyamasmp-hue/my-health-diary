@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react'
-import { addInjection, fetchSchedules } from '../../hooks/useHealthData'
+import { addInjection, updateInjection, fetchSchedules } from '../../hooks/useHealthData'
 import { today } from '../../utils/dateUtils'
 
-export default function InjectionForm({ dateStr, onSave, onClose }) {
+export default function InjectionForm({ dateStr, initialData, onSave, onClose }) {
   const [schedules, setSchedules]   = useState([])
-  const [scheduleId, setScheduleId] = useState('')
-  const [drugName, setDrugName]     = useState('')
-  const [scheduledDate, setScheduledDate] = useState(dateStr)
-  const [actualDate, setActualDate] = useState(dateStr)
-  const [memo, setMemo]             = useState('')
+  const [scheduleId, setScheduleId] = useState(initialData?.scheduleId || '')
+  const [drugName, setDrugName]     = useState(initialData?.drugName || '')
+  const [scheduledDate, setScheduledDate] = useState(initialData?.scheduledDate || dateStr)
+  const [actualDate, setActualDate] = useState(initialData?.actualDate || dateStr)
+  const [memo, setMemo]             = useState(initialData?.memo || '')
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
 
   useEffect(() => {
     fetchSchedules().then(list => {
       setSchedules(list.filter(s => s.active))
-      if (list.length > 0) {
+      if (!initialData && list.length > 0) {
         setScheduleId(list[0].id)
         setDrugName(list[0].drugName)
       }
@@ -33,13 +33,18 @@ export default function InjectionForm({ dateStr, onSave, onClose }) {
     if (!drugName.trim()) { setError('薬名を入力してください'); return }
     setSaving(true)
     try {
-      await addInjection(dateStr, {
+      const record = {
         drugName: drugName.trim(),
         scheduleId: scheduleId || null,
         scheduledDate,
         actualDate: actualDate || null,
         memo: memo.trim(),
-      })
+      }
+      if (initialData) {
+        await updateInjection(dateStr, initialData.id, record)
+      } else {
+        await addInjection(dateStr, record)
+      }
       onSave()
     } catch (e) {
       setError('保存に失敗しました: ' + e.message)
@@ -52,7 +57,7 @@ export default function InjectionForm({ dateStr, onSave, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>💊 自己注射を記録</h2>
+          <h2>💊 自己注射を{initialData ? '編集' : '記録'}</h2>
           <button className="sheet-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">

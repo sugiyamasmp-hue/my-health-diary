@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { addTemperature } from '../../hooks/useHealthData'
+import { addTemperature, updateTemperature } from '../../hooks/useHealthData'
 
-export default function TemperatureForm({ dateStr, onSave, onClose }) {
-  const [value, setValue]   = useState('')
-  const [memo, setMemo]     = useState('')
+export default function TemperatureForm({ dateStr, initialData, onSave, onClose }) {
+  const [value, setValue]   = useState(initialData ? String(initialData.value) : '')
+  const [memo, setMemo]     = useState(initialData?.memo || '')
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
@@ -13,7 +13,11 @@ export default function TemperatureForm({ dateStr, onSave, onClose }) {
     if (v < 34 || v > 42) { setError('体温の値が範囲外です (34〜42°C)'); return }
     setSaving(true)
     try {
-      await addTemperature(dateStr, { value: v, memo: memo.trim() })
+      if (initialData) {
+        await updateTemperature(dateStr, initialData.id, { value: v, memo: memo.trim() })
+      } else {
+        await addTemperature(dateStr, { value: v, memo: memo.trim() })
+      }
       onSave()
     } catch (e) {
       setError('保存に失敗しました: ' + e.message)
@@ -34,7 +38,7 @@ export default function TemperatureForm({ dateStr, onSave, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>🌡️ 体温を記録</h2>
+          <h2>🌡️ 体温を{initialData ? '編集' : '記録'}</h2>
           <button className="sheet-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
@@ -54,7 +58,6 @@ export default function TemperatureForm({ dateStr, onSave, onClose }) {
               style={{ fontSize: 20, textAlign: 'center' }} />
           </div>
 
-          {/* Quick buttons */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 14, justifyContent: 'center' }}>
             {['35.5','36.0','36.5','37.0','37.5','38.0'].map(v => (
               <button key={v} onClick={() => setValue(v)} style={{

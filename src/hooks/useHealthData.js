@@ -33,6 +33,12 @@ export const addBloodPressure = async (dateStr, record) => {
   return entry
 }
 
+export const updateBloodPressure = async (dateStr, id, record) => {
+  const data = await getDateDoc(dateStr)
+  data.bloodPressures = (data.bloodPressures || []).map(r => r.id === id ? { ...r, ...record } : r)
+  await saveDateDoc(dateStr, data)
+}
+
 export const deleteBloodPressure = async (dateStr, id) => {
   const data = await getDateDoc(dateStr)
   data.bloodPressures = (data.bloodPressures || []).filter(r => r.id !== id)
@@ -47,6 +53,12 @@ export const addTemperature = async (dateStr, record) => {
   data.temperatures = [...(data.temperatures || []), entry]
   await saveDateDoc(dateStr, data)
   return entry
+}
+
+export const updateTemperature = async (dateStr, id, record) => {
+  const data = await getDateDoc(dateStr)
+  data.temperatures = (data.temperatures || []).map(r => r.id === id ? { ...r, ...record } : r)
+  await saveDateDoc(dateStr, data)
 }
 
 export const deleteTemperature = async (dateStr, id) => {
@@ -65,6 +77,12 @@ export const addWeight = async (dateStr, record) => {
   return entry
 }
 
+export const updateWeight = async (dateStr, id, record) => {
+  const data = await getDateDoc(dateStr)
+  data.weights = (data.weights || []).map(r => r.id === id ? { ...r, ...record } : r)
+  await saveDateDoc(dateStr, data)
+}
+
 export const deleteWeight = async (dateStr, id) => {
   const data = await getDateDoc(dateStr)
   data.weights = (data.weights || []).filter(r => r.id !== id)
@@ -81,6 +99,12 @@ export const addInjection = async (dateStr, record) => {
   return entry
 }
 
+export const updateInjection = async (dateStr, id, record) => {
+  const data = await getDateDoc(dateStr)
+  data.injections = (data.injections || []).map(r => r.id === id ? { ...r, ...record } : r)
+  await saveDateDoc(dateStr, data)
+}
+
 export const deleteInjection = async (dateStr, id) => {
   const data = await getDateDoc(dateStr)
   data.injections = (data.injections || []).filter(r => r.id !== id)
@@ -95,6 +119,12 @@ export const addEvent = async (dateStr, record) => {
   data.events = [...(data.events || []), entry]
   await saveDateDoc(dateStr, data)
   return entry
+}
+
+export const updateEvent = async (dateStr, id, record) => {
+  const data = await getDateDoc(dateStr)
+  data.events = (data.events || []).map(r => r.id === id ? { ...r, ...record } : r)
+  await saveDateDoc(dateStr, data)
 }
 
 export const deleteEvent = async (dateStr, id) => {
