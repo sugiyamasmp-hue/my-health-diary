@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { addEvent, updateEvent } from '../../hooks/useHealthData'
 import { uploadImage } from '../../utils/cloudinary'
 
@@ -66,7 +67,7 @@ export default function EventForm({ dateStr, initialData, onSave, onClose }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
@@ -146,7 +147,8 @@ export default function EventForm({ dateStr, initialData, onSave, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

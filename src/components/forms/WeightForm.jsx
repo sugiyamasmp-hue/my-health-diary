@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { addWeight, updateWeight } from '../../hooks/useHealthData'
 
 export default function WeightForm({ dateStr, initialData, onSave, onClose }) {
@@ -26,7 +27,7 @@ export default function WeightForm({ dateStr, initialData, onSave, onClose }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
@@ -62,7 +63,8 @@ export default function WeightForm({ dateStr, initialData, onSave, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

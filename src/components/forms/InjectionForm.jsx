@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { addInjection, updateInjection, fetchSchedules, getCurrentPeriod } from '../../hooks/useHealthData'
 import { today, addDays } from '../../utils/dateUtils'
 
@@ -87,7 +88,7 @@ export default function InjectionForm({ dateStr, initialData, onSave, onClose })
       ? buildDates(calInfo.scheduledDate, calInfo.period, count)
       : [calInfo.scheduledDate]
 
-    return (
+    return createPortal(
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
@@ -149,12 +150,13 @@ export default function InjectionForm({ dateStr, initialData, onSave, onClose })
             <button className="btn btn-primary" style={{ flex: 1 }} onClick={onSave}>閉じる</button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
 
   // ─── Form ────────────────────────────────────────────────────────────────
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
@@ -209,7 +211,8 @@ export default function InjectionForm({ dateStr, initialData, onSave, onClose })
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

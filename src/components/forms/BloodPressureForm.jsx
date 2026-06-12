@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { addBloodPressure, updateBloodPressure } from '../../hooks/useHealthData'
 
 const LOCATIONS = ['自宅', '病院', 'DS', 'その他']
@@ -56,7 +57,7 @@ export default function BloodPressureForm({ dateStr, initialData, onSave, onClos
     }
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
@@ -144,7 +145,8 @@ export default function BloodPressureForm({ dateStr, initialData, onSave, onClos
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

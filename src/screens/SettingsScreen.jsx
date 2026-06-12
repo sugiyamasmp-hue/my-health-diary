@@ -13,6 +13,20 @@ const PERIOD_OPTIONS = [
   { days: 28, label: '4週間' },
 ]
 
+const GCAL_BASE = 'https://calendar.google.com/calendar/render'
+
+function makeScheduleGCalUrl(drugName, dateStr, period) {
+  const d = dateStr.replace(/-/g, '')
+  const periodLabel = PERIOD_OPTIONS.find(p => p.days === period)?.label ?? `${period}日おき`
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `💉 注射（${drugName}）`,
+    dates: `${d}/${d}`,
+    details: `${drugName}\n繰り返し: ${periodLabel}`,
+  })
+  return `${GCAL_BASE}?${params}`
+}
+
 export default function SettingsScreen() {
   const [schedules, setSchedules]     = useState([])
   const [loading, setLoading]         = useState(true)
@@ -157,6 +171,21 @@ function ScheduleCard({ schedule, onChanged }) {
               {isEnded && <span>終了日: {schedule.endDate}</span>}
               {nextDue && <span style={{ color: 'var(--injection-color)', fontWeight: 600 }}>次回予定: {nextDue}</span>}
             </div>
+            {nextDue && (
+              <a
+                href={makeScheduleGCalUrl(schedule.drugName, nextDue, period)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  marginTop: 8, padding: '6px 12px', borderRadius: 20,
+                  fontSize: 12, fontWeight: 700, textDecoration: 'none',
+                  background: '#F0F5FF', border: '1.5px solid #C7D7FD', color: '#4F7FFF',
+                }}
+              >
+                📅 Googleカレンダーに追加
+              </a>
+            )}
           </div>
 
           {/* Action buttons */}
