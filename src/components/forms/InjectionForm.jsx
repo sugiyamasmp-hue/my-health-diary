@@ -1,16 +1,41 @@
 import { useState, useEffect } from 'react'
-import { addInjection, updateInjection, fetchSchedules } from '../../hooks/useHealthData'
-import { today } from '../../utils/dateUtils'
+import { addInjection, updateInjection, fetchSchedules, getCurrentPeriod } from '../../hooks/useHealthData'
+import { today, addDays } from '../../utils/dateUtils'
+
+const GCAL_BASE = 'https://calendar.google.com/calendar/render'
+
+function makeGCalUrl(drugName, dateStr, memo) {
+  const d = dateStr.replace(/-/g, '')
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `💉 注射（${drugName}）`,
+    dates: `${d}/${d}`,
+    details: memo ? `${drugName}\n${memo}` : drugName,
+  })
+  return `${GCAL_BASE}?${params}`
+}
+
+function buildDates(startDate, period, count) {
+  const dates = []
+  let cur = startDate
+  for (let i = 0; i < count; i++) {
+    dates.push(cur)
+    cur = addDays(cur, period)
+  }
+  return dates
+}
 
 export default function InjectionForm({ dateStr, initialData, onSave, onClose }) {
-  const [schedules, setSchedules]   = useState([])
-  const [scheduleId, setScheduleId] = useState(initialData?.scheduleId || '')
-  const [drugName, setDrugName]     = useState(initialData?.drugName || '')
+  const [schedules, setSchedules]         = useState([])
+  const [scheduleId, setScheduleId]       = useState(initialData?.scheduleId || '')
+  const [drugName, setDrugName]           = useState(initialData?.drugName || '')
   const [scheduledDate, setScheduledDate] = useState(initialData?.scheduledDate || dateStr)
-  const [actualDate, setActualDate] = useState(initialData?.actualDate || dateStr)
-  const [memo, setMemo]             = useState(initialData?.memo || '')
-  const [saving, setSaving]         = useState(false)
-  const [error, setError]           = useState('')
+  const [actualDate, setActualDate]       = useState(initialData?.actualDate || dateStr)
+  const [memo, setMemo]                   = useState(initialData?.memo || '')
+  const [saving, setSaving]               = useState(false)
+  const [error, setError]                 = useState('')
+  const [calInfo, setCalInfo]             = useState(null)
+  const [multiCount, setMultiCount]       = useState(6)
 
   useEffect(() => {
     fetchSchedules().then(list => {
@@ -25,8 +50,7 @@ export default function InjectionForm({ dateStr, initialData, onSave, onClose })
   const handleScheduleChange = (id) => {
     setScheduleId(id)
     const s = schedules.find(s => s.id === id)
-    if (s) setDrugName(s.drugName)
-    else setDrugName('')
+    setDrugName(s ? s.drugName : '')
   }
 
   const handleSave = async () => {
@@ -45,7 +69,9 @@ export default function InjectionForm({ dateStr, initialData, onSave, onClose })
       } else {
         await addInjection(dateStr, record)
       }
-      onSave()
+      const sel = schedules.find(s => s.id === scheduleId)
+      const period = sel ? getCurrentPeriod(sel) : null
+      setCalInfo({ drugName: drugName.trim(), scheduledDate, period, memo: memo.trim() })
     } catch (e) {
       setError('保存に失敗しました: ' + e.message)
     } finally {
@@ -53,6 +79,81 @@ export default function InjectionForm({ dateStr, initialData, onSave, onClose })
     }
   }
 
+  // ─── Post-save calendar panel ────────────────────────────────────────────
+  if (calInfo) {
+    const isRecurring = calInfo.period != null
+    const count = isRecurring ? multiCount : 1
+    const dates = isRecurring
+      ? buildDates(calInfo.scheduledDate, calInfo.period, count)
+      : [calInfo.scheduledDate]
+
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>✅ 保存しました</h2>
+            <button className="sheet-close" onClick={onSave}>✕</button>
+          </div>
+
+          <div className="modal-body">
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>
+                💉 注射（{calInfo.drugName}）
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                Googleカレンダーに予定を追加できます
+              </div>
+            </div>
+
+            {isRecurring && (
+              <>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                  追加する件数を選択（{calInfo.period}日おきの予定）
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  {[3, 6, 12].map(n => (
+                    <button key={n} onClick={() => setMultiCount(n)} style={{
+                      flex: 1, padding: '8px 0', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                      cursor: 'pointer', border: '1.5px solid var(--border)',
+                      background: multiCount === n ? 'var(--injection-color)' : '#fff',
+                      color: multiCount === n ? '#fff' : 'var(--text-secondary)',
+                      transition: 'all 0.15s',
+                    }}>{n}件</button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {dates.map(date => (
+                <a
+                  key={date}
+                  href={makeGCalUrl(calInfo.drugName, date, calInfo.memo)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 16px', borderRadius: 10, textDecoration: 'none',
+                    background: '#F0F5FF', border: '1.5px solid #C7D7FD',
+                  }}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>📅 {date}</span>
+                  <span style={{ fontSize: 12, color: '#4F7FFF', fontWeight: 700 }}>追加 →</span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>スキップ</button>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={onSave}>閉じる</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Form ────────────────────────────────────────────────────────────────
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
