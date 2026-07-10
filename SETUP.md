@@ -14,12 +14,25 @@ VITE_CLOUDINARY_UPLOAD_PRESET=あなたのUploadPreset
 
 ## 2. Firebase の設定
 
+`firebase.json` / `.firebaserc` を同梱しているので、Firebase CLI でルールをデプロイできます。
+
+```bash
+npx firebase login
+npx firebase deploy --only firestore:rules
+# インデックスも更新する場合
+npx firebase deploy --only firestore:indexes
+```
+
+CLI が使えない場合は Firebase Console から手動反映してください:
+
 1. [Firebase Console](https://console.firebase.google.com) → my-health-diary-e8085
-2. Firestore Database → **ルール** タブ → `firestore.rules` の内容を貼り付け
-3. (オプション) `firestore.indexes.json` をデプロイ:
-   ```
-   npx firebase deploy --only firestore:indexes
-   ```
+2. Firestore Database → **ルール** タブ → `firestore.rules` の内容を貼り付けて「公開」
+
+⚠️ Firebase Console で「テストモード」を選んでデータベースを作成すると、
+`allow read, write: if request.time < timestamp.date(...)` のような
+**30日で失効するルール**が自動生成されます。期限が切れると
+「Missing or insufficient permissions」で保存が失敗するようになるため、
+本リポジトリの `firestore.rules`（期限なし）を必ずデプロイしてください。
 
 ## 3. ローカル開発
 
