@@ -1,10 +1,37 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Single-user app: allow all reads/writes for now
-    // TODO: Add authentication rules when auth is implemented
+    // Single-user app, no Firebase Authentication yet.
+    // This rule has NO expiration date, unlike the Firebase Console's
+    // default 30-day "test mode" rule (which uses
+    // `allow read, write: if request.time < timestamp.date(...)` and
+    // stops working once that date passes — that expiry was the cause
+    // of the "Missing or insufficient permissions" save failures).
     match /{document=**} {
       allow read, write: if true;
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Future: once Firebase Authentication is introduced, replace the block
+// above with something like this so only signed-in users (and, if desired,
+// only the owner of a document) can read/write:
+//
+// match /databases/{database}/documents {
+//   match /dates/{dateId} {
+//     allow read, write: if request.auth != null;
+//   }
+//   match /injectionSchedules/{scheduleId} {
+//     allow read, write: if request.auth != null;
+//   }
+// }
+//
+// If documents are extended with a `uid` field to support multiple users,
+// scope access to the owner instead:
+//
+// match /dates/{dateId} {
+//   allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+//   allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+// }
+// ---------------------------------------------------------------------------
