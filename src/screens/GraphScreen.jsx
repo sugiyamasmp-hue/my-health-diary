@@ -46,19 +46,20 @@ export default function GraphScreen() {
       const points = []
       rows.forEach(({ date, data: d }) => {
         const bps = d.bloodPressures || []
-        if (bps.length === 0) return
-        const lastBP = bps[bps.length - 1]
+        const lastBP = bps.length > 0 ? bps[bps.length - 1] : null
         const lastTemp = (d.temperatures || []).slice(-1)[0]
         const lastWeight = (d.weights || []).slice(-1)[0]
         const tempValue = lastTemp?.value ?? lastBP?.temperature ?? null
+        const weightValue = lastWeight?.value ?? null
+        if (!lastBP && tempValue == null && weightValue == null) return
         points.push({
           date,
           label: date.slice(5),
-          systolic:  lastBP.systolic,
-          diastolic: lastBP.diastolic,
-          pulse:     lastBP.pulse,
+          systolic:  lastBP?.systolic ?? null,
+          diastolic: lastBP?.diastolic ?? null,
+          pulse:     lastBP?.pulse ?? null,
           temp:      tempValue,
-          weight:    lastWeight?.value,
+          weight:    weightValue,
         })
       })
       points.sort((a, b) => a.date.localeCompare(b.date))
